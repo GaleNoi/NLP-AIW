@@ -1,0 +1,162 @@
+import spacy
+nlpIT = spacy.load("it_core_news_lg")
+import numpy as np
+from collections import Counter
+from spacy import displacy
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+
+
+
+
+# Livello 1.1
+with open("Alice_nel_paese_delle_meraviglie.txt", "r", encoding="utf-8") as f:
+   Alice_NPDM = f.readlines()
+Alice_Testo_Pulito0 = Alice_NPDM[52:3625]
+Alice_Testo_Pulito1 = Alice_NPDM[177:3596]
+# print(len(Alice_Testo_Pulito)) 3625-52 = 3573, quindi il testo è corretto.
+Alice_Testo0 = "".join(Alice_Testo_Pulito0) #unisco le stringhe in un unica stringa
+
+
+
+
+#PUNTO Livello 1.2
+Alice_Testo_Pulito = nlpIT(Alice_Testo0) #passiamo il testo alla NLP
+
+
+#PUNTO Livello 1.3
+# funzione che restituisce il numero totale di token
+
+
+def tokenss():
+   tokens = []
+   for token in Alice_Testo_Pulito:
+      tokens.append(not token.is_punct and not token.is_space) # escludo i token che sono punteggiatura e gli spazi vuoti
+   return tokens
+# print(sum(tokenss()))
+
+
+# funzione che restituisce il numero totale di lemmi
+def lemmi1():
+   lemmi= []
+   for parole in Alice_Testo_Pulito:
+       lemmi.append(parole.lemma_ and not parole.is_stop and not parole.is_space and not parole.is_punct)
+   return(lemmi)
+# print(sum(lemmi1()))
+
+
+# funzione che restituisce le 10 parole più comuni
+def top_10_parole():
+   parole_comuni = {}
+   for token in Alice_Testo_Pulito:
+       if not token.is_space and not token.is_stop and not token.is_punct:
+           lemma = token.lemma_.lower()
+           parole_comuni.setdefault(lemma, 0)
+           parole_comuni[lemma] +=  1
+   return(parole_comuni)
+
+
+
+
+
+
+# funzione che stampa le 10 parole più comuni
+def top_10_parole_stampa():
+   top10parole = Counter(top_10_parole()).most_common(5)
+   for index,i in enumerate(top10parole):
+       print(f" la {index+1}° parola più frequente  è '{i[0]}' ripetuta: {i[1]} volte")
+
+
+# print(top_10_parole_stampa())
+def top_10_parole1():
+   top10parole = Counter(top_10_parole()).most_common(5)
+   return top10parole
+
+
+#grafico
+datas= top_10_parole1()
+df = pd.DataFrame(datas)
+df.columns = ['parola', 'ripetizioni']
+df['ripetizioni'] = pd.to_numeric(df['ripetizioni'])
+print(df)
+sns.barplot(data= df, y="ripetizioni",x="parola")
+plt.show()
+
+
+# livello 2.1: Riconoscimento di entità nominate (NER)
+
+
+#funzione che estrae le entità PERSON
+def entita_person():
+   pers_frequenti = [ ]
+   for token in Alice_Testo_Pulito.ents:
+       if token.label_ == "PER":
+           pers_frequenti.append(F"Il token {token.text} e la classe {token.label_} " )
+   return pers_frequenti
+# print(entita_person())
+
+
+#funzione che estrae le entità PERSON più frequenti
+
+
+def per_frequenti():
+   pers_frequenti = []
+   top5per= {}
+   for token in Alice_Testo_Pulito.ents:
+       if token.label_ == "PER" and not token.text == "_" :
+           pers_frequenti.append(token.text)
+   for token in Alice_Testo_Pulito:
+        if token.text == "Coniglio":
+           pers_frequenti.append("Coniglio")
+   for token in pers_frequenti:
+           top5per.setdefault(token, 0)
+           top5per[token] +=  1
+   return top5per
+
+
+
+
+#funzione che stampa le entità PERSON più frequenti
+def per_frequenti_stampa():
+   top5per = Counter(per_frequenti()).most_common(5)
+   for i in top5per:
+       print(f"il personaggio '{i[0]}': è ripetuto {i[1]} volte")
+# print(per_frequenti_stampa())
+# displacy.serve(Alice_Testo_Pulito, style="ent", port= 8080) # ho usato displacy per capire cosa ci  fosse di sbagliato nella lettura delle entità
+
+
+# livello 2.2 Analisi dei capitoli
+
+
+capitolonlp = "".join(Alice_Testo_Pulito1)
+Alice_Solo_Testo = nlpIT(capitolonlp)
+
+
+def estrai_capitoli():
+   capitolo1 = []
+   capitolo2 = []
+   y = ()
+   cap = str(input("inserisci un capitolo in lettere romane ad eccezione dei cap. I.,V., X. (vanno scirtti con il punto alla fine):"))
+   for token in Alice_Solo_Testo:
+       if token.text == cap:
+               y = (len(capitolo1))
+               break
+       else:
+           capitolo1.append(token)
+   alice_remove1= Alice_Solo_Testo[y:]
+   alice_remove2 = "".join(str(alice_remove1))
+   alice_remove3 = nlpIT(alice_remove2)
+   for token in alice_remove3:
+       if token.text == "CAPITOLO":
+           break
+       else:
+           capitolo2 .append(token)
+   tokens = [token for token in capitolo2 if not token.is_punct and not token.is_space]
+   return len(tokens)
+   return (capitolo2)
+
+
+# print(estrai_capitoli())
